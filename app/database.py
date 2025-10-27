@@ -15,17 +15,7 @@ AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=F
 
 
 async def get_db():
-    """Dependency для получения асинхронной сессии БД.
-    
-    Yields:
-        AsyncSession: Асинхронная сессия для работы с БД
-        
-    Example:
-        @app.get("/items/")
-        async def read_items(db: AsyncSession = Depends(get_db)):
-            result = await db.execute(select(Item))
-            return result.scalars().all()
-    """
+    """Dependency для получения асинхронной сессии БД"""
 
     async with AsyncSessionLocal() as session:
         try:

@@ -7,7 +7,9 @@ from pydantic import BaseModel
 from app.dependencies.auth import get_current_user, User
 from app import models, database
 
+
 router = APIRouter(prefix="/api/tickers", tags=["tickers"])
+BASE_IMAGES_URL = '/admin/static/images/tickers/'
 
 
 class TickerResponse(BaseModel):
@@ -33,6 +35,11 @@ class TickerSearchResponse(BaseModel):
 class AssetPricesResponse(BaseModel):
     """Модель ответа для цен активов"""
     prices: dict[str, float]
+
+
+class AssetImagesResponse(BaseModel):
+    """Модель ответа для картинок активов"""
+    images: dict[str, str]
 
 
 @router.get("", response_model=TickerSearchResponse)
@@ -107,14 +114,7 @@ async def get_assets_prices(
     """
     Возвращает текущие цены для списка активов
     """
-    if not asset_ids:
-        return AssetPricesResponse(prices={})
-
-    result = await db.execute(
-        select(models.Ticker)
-        .where(models.Ticker.id.in_(asset_ids))
-    )
-    tickers = result.scalars().all()
+    tickers = await _get_tickers_by_ids(asset_ids, db)
 
     prices = {
         ticker.id: ticker.price
@@ -122,3 +122,36 @@ async def get_assets_prices(
     }
 
     return AssetPricesResponse(prices=prices)
+
+
+@router.post('/images', response_model=AssetImagesResponse)
+async def get_assets_images(
+    asset_ids: List[str],
+    db: AsyncSession = Depends(database.get_db)
+) -> AssetImagesResponse:
+    """
+    Возвращает URL изображений для списка активов
+    """
+    tickers = await _get_tickers_by_ids(asset_ids, db)
+
+    size = 24
+    images = {
+        ticker.id: f'{BASE_IMAGES_URL}{ticker.market}/{size}/{ticker.image}'
+        for ticker in tickers
+    }
+
+    return AssetImagesResponse(images=images)
+
+
+async def _get_tickers_by_ids(
+    asset_ids: List[str],
+    db: AsyncSession
+) -> List[models.Ticker]:
+    """Общая функция для получения тикеров по списку ID"""
+    if not asset_ids:
+        return []
+    
+    result = await db.execute(
+        select(models.Ticker).where(models.Ticker.id.in_(asset_ids))
+    )
+    return result.scalars().all()
