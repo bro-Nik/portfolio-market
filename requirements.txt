@@ -6,3 +6,4 @@ python-multipart
 asyncpg
 pyjwt
 pydantic[email]
+psycopg2-binary
