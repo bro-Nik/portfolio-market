@@ -7,3 +7,8 @@ asyncpg
 pyjwt
 pydantic[email]
 psycopg2-binary
+celery
+redis
+python-dotenv
+celery-redbeat
+requests

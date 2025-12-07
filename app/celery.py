@@ -24,3 +24,11 @@ celery.conf.update(
     beat_scheduler='redbeat.RedBeatScheduler',
     beat_max_loop_interval=300,
 )
+
+# Периодические задачи по умолчанию
+celery.conf.beat_schedule = {
+    'update-prices-5min': {
+        'task': 'app.tasks.smart_price_update',
+        'schedule': crontab(minute='*/5')
+    },
+}

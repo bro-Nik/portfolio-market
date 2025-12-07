@@ -1,4 +1,17 @@
 import os
+from enum import Enum
+
+
+class MarketType(str, Enum):
+    CRYPTO = 'crypto'
+    STOCK = 'stock'
+    CURRENCY = 'currency'
+
+
+class MarketTickerPrefix(str, Enum):
+    CRYPTO = 'cr-'
+    STOCK = 'st-'
+    CURRENCY = 'cu-'
 
 
 class Settings:
