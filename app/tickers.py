@@ -9,7 +9,7 @@ from app import models, database
 
 
 router = APIRouter(prefix="/api/tickers", tags=["tickers"])
-BASE_IMAGES_URL = '/admin/static/images/tickers/'
+BASE_IMAGES_URL = '/market/static/images/tickers'
 
 
 class TickerResponse(BaseModel):
@@ -40,6 +40,11 @@ class AssetPricesResponse(BaseModel):
 class AssetImagesResponse(BaseModel):
     """Модель ответа для картинок активов"""
     images: dict[str, str]
+
+
+class AssetInfoResponse(BaseModel):
+    """Модель ответа для информации о активове"""
+    info: dict[str, dict]
 
 
 @router.get("", response_model=TickerSearchResponse)
@@ -135,12 +140,31 @@ async def get_assets_images(
     tickers = await _get_tickers_by_ids(asset_ids, db)
 
     size = 24
-    images = {
-        ticker.id: f'{BASE_IMAGES_URL}{ticker.market}/{size}/{ticker.image}'
-        for ticker in tickers
-    }
+    images = {t.id: f'{BASE_IMAGES_URL}/{t.market}/{size}/{t.image}' for t in tickers}
 
     return AssetImagesResponse(images=images)
+
+
+@router.post('/info', response_model=AssetInfoResponse)
+async def get_assets_info(
+    asset_ids: List[str],
+    db: AsyncSession = Depends(database.get_db)
+) -> AssetInfoResponse:
+    """
+    Возвращает информацию о тикерах для списка активов
+    """
+    tickers = await _get_tickers_by_ids(asset_ids, db)
+
+    info = {}
+    for ticker in tickers:
+        ticker_data = {
+            'image': f'{BASE_IMAGES_URL}/{ticker.market}/24/{ticker.image}',
+            'name': ticker.name,
+            'symbol': ticker.symbol,
+        }
+        info[ticker.id] = ticker_data
+
+    return AssetInfoResponse(info=info)
 
 
 async def _get_tickers_by_ids(

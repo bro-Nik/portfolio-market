@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app import models, database, tickers
@@ -15,6 +16,19 @@ app = FastAPI(
 
 # Подключаем роутеры
 app.include_router(tickers.router)
+
+
+# Статические файлы
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+# Добавляем headers для кэширования
+@app.middleware("http")
+async def add_cache_headers(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000"  # 1 год
+    return response
 
 
 if __name__ == "__main__":
