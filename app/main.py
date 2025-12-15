@@ -2,9 +2,9 @@ from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from app import tickers
 from .api import tasks
 from app.api.admin import admin_router
+from app.api.user import user_router
 
 
 app = FastAPI(
@@ -17,7 +17,7 @@ app = FastAPI(
 
 
 # Подключаем роутеры
-app.include_router(tickers.router)
+app.include_router(user_router)
 app.include_router(admin_router)
 
 

@@ -4,11 +4,11 @@ from sqlalchemy import select, or_, func
 from typing import List, Optional
 from pydantic import BaseModel
 
-from app.dependencies.auth import get_current_user, User
 from app import models, database
+from app.api.dependencies.auth import get_current_user, User
 
 
-router = APIRouter(prefix="/api/tickers", tags=["tickers"])
+router = APIRouter(prefix="/tickers", tags=["tickers"])
 BASE_IMAGES_URL = '/market/static/images/tickers'
 
 
