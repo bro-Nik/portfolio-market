@@ -18,8 +18,13 @@ async def get_services(
     api_service: ApiService = Depends(get_api_service)
 ) ->List[schemas.ApiServiceResponse]:
     """Получить список API сервисов"""
-    services = await api_service.get_services(skip=skip, limit=limit, active_only=active_only)
-    return [schemas.ApiServiceResponse.from_orm(service) for service in services]
+    try:
+        services = await api_service.get_services(skip=skip, limit=limit, active_only=active_only)
+        return [schemas.ApiServiceResponse.from_orm(service) for service in services]
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/", response_model=schemas.ApiServiceResponse)
@@ -28,8 +33,13 @@ async def create_service(
     api_service: ApiService = Depends(get_api_service)
 ) -> schemas.ApiServiceResponse:
     """Создать новый API сервис"""
-    service = await api_service.create_service(service_data)
-    return schemas.ApiServiceResponse.from_orm(service)
+    try:
+        service = await api_service.create_service(service_data)
+        return schemas.ApiServiceResponse.from_orm(service)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/{service_id}", response_model=schemas.ApiServiceResponse)
@@ -39,11 +49,15 @@ async def update_service(
     api_service: ApiService = Depends(get_api_service)
 ) -> schemas.ApiServiceResponse:
     """Обновить API сервис"""
-
-    service = await api_service.update_service(service_id, service_data)
-    if not service:
-        raise HTTPException(status_code=404, detail="API сервис не найден")
-    return schemas.ApiServiceResponse.from_orm(service)
+    try:
+        service = await api_service.update_service(service_id, service_data)
+        if not service:
+            raise HTTPException(status_code=404, detail="API сервис не найден")
+        return schemas.ApiServiceResponse.from_orm(service)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{service_id}", response_model=schemas.ApiServiceResponse)
@@ -52,10 +66,15 @@ async def get_service(
     api_service: ApiService = Depends(get_api_service)
 ) -> schemas.ApiServiceResponse:
     """Получить информацию об API сервисе"""
-    service = await api_service.get_service(service_id)
-    if not service:
-        raise HTTPException(status_code=404, detail="API сервис не найден")
-    return schemas.ApiServiceResponse.from_orm(service)
+    try:
+        service = await api_service.get_service(service_id)
+        if not service:
+            raise HTTPException(status_code=404, detail="API сервис не найден")
+        return schemas.ApiServiceResponse.from_orm(service)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{service_id}")
@@ -64,8 +83,13 @@ async def delete_service(
     api_service: ApiService = Depends(get_api_service)
 ) -> dict:
     """Удалить API сервис"""
-    await api_service.delete_service(service_id)
-    return {"message": "API сервис удален"}
+    try:
+        await api_service.delete_service(service_id)
+        return {"message": "API сервис удален"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{service_id}/reset-counters")
@@ -74,10 +98,15 @@ async def reset_counters(
     api_service: ApiService = Depends(get_api_service)
 ) -> dict:
     """Сбросить счетчики API сервиса"""
-    service = await api_service.reset_counters(service_id)
-    if not service:
-        raise HTTPException(status_code=404, detail="API сервис не найден")
-    return {"message": "Счетчики сброшены"}
+    try:
+        service = await api_service.reset_counters(service_id)
+        if not service:
+            raise HTTPException(status_code=404, detail="API сервис не найден")
+        return {"message": "Счетчики сброшены"}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{service_id}/stats")
@@ -86,10 +115,15 @@ async def get_service_stats(
     api_service: ApiService = Depends(get_api_service)
 ) -> dict:
     """Получить статистику использования API сервиса"""
-    stats = await api_service.get_stats(service_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="API сервис не найден")
-    return stats
+    try:
+        stats = await api_service.get_stats(service_id)
+        if not stats:
+            raise HTTPException(status_code=404, detail="API сервис не найден")
+        return stats
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{service_id}/logs")
@@ -100,8 +134,13 @@ async def get_service_logs(
     api_service: ApiService = Depends(get_api_service)
 ):
     """Получить логи запросов API сервиса"""
-    logs = await api_service.get_logs(service_id, hours=hours, limit=limit)
-    return logs
+    try:
+        logs = await api_service.get_logs(service_id, hours=hours, limit=limit)
+        return logs
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/presets/default")
