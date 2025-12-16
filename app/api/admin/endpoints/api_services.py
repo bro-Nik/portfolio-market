@@ -210,3 +210,11 @@ def get_default_presets():
             }
         ]
     }
+
+
+@router.get("/services/with/methods")
+async def get_services_with_methods(
+    api_service: ApiService = Depends(get_api_service)
+):
+    """Получить список сервисов с поддерживаемыми методами"""
+    return await api_service.get_services_with_methods()
