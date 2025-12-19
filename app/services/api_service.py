@@ -1,5 +1,6 @@
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta, timezone
+from app.external_api.management.registry import ExternalApiRegistry
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import schemas
@@ -141,6 +142,24 @@ class ApiService:
         limit: Optional[int] = 100
     ):
 
-        last_time = datetime.utcnow() - timedelta(hours=hours)
+        last_time = datetime.now(timezone.utc) - timedelta(hours=hours)
         logs = await self.api_repo.get_logs(service_id, last_time=last_time, limit=limit)
         return logs
+
+    async def get_services_with_methods(self) -> List[Dict[str, Any]]:
+        result = []
+        services = await self.get_services(active_only=True)
+        for service in services:
+            methods = ExternalApiRegistry.get_service_methods(service.name)
+            methods_list = []
+            if methods:
+                for method_name, method in methods.items():
+                    methods_list.append(method_name)
+            if methods:
+                info = {
+                    'id': service.id,
+                    'name': service.display_name or service.name,
+                    'methods': methods_list
+                }
+                result.append(info)
+        return result
