@@ -6,6 +6,7 @@ class ExternalApiServiceBase(ABC):
     NAME = ''
 
     def __init__(self):
+        self.client = None
         self.methods = None
 
     @property
@@ -24,3 +25,8 @@ class ExternalApiServiceBase(ABC):
         method = getattr(self.methods, method_name)
         result = method(*args, **kwargs)
         return result
+
+    def save_state(self):
+        """Сохранение состояния"""
+        if self.client and hasattr(self.client, 'save_state'):
+            self.client.save_state()
