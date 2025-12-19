@@ -74,8 +74,8 @@ class ApiService(Base):
     avg_response_time: Mapped[float] = mapped_column(Float, default=0.0, nullable=False, comment="Среднее время ответа (мс)")
 
     # Системные поля
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="Дата создания")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, onupdate=lambda: datetime.now(timezone.utc), comment="Дата обновления")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False, comment="Дата создания")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False, onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None), comment="Дата обновления")
 
     # Связи
     request_logs: Mapped[list["ApiRequestLog"]] = relationship(back_populates="service", cascade="all, delete-orphan")
@@ -93,7 +93,9 @@ class ApiRequestLog(Base):
     __tablename__ = "api_request_logs"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    service_id: Mapped[int] = mapped_column(Integer, ForeignKey('api_services.id', ondelete='CASCADE'), nullable=False, index=True, comment="ID сервиса")
+    # service_id: Mapped[int] = mapped_column(Integer, ForeignKey('api_services.id', ondelete='CASCADE'), nullable=False, index=True, comment="ID сервиса")
+    service_id: Mapped[Optional[int]] = mapped_column(Integer, comment="ID сервиса")
+    service_name: Mapped[int] = mapped_column(String(100), ForeignKey('api_services.name', ondelete='CASCADE'), nullable=False, index=True, comment="Название сервиса")
     endpoint: Mapped[str] = mapped_column(String(500), nullable=False, comment="Endpoint API")
     method: Mapped[str] = mapped_column(String(10), default='GET', nullable=False, comment="HTTP метод")
     status_code: Mapped[Optional[int]] = mapped_column(Integer, comment="HTTP статус код")
@@ -122,9 +124,10 @@ class ApiRequestLog(Base):
     scheduled_task_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('scheduled_tasks.id', ondelete='SET NULL'), index=True, comment="ID запланированной задачи")
 
     # Системные поля
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="Дата создания")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False, comment="Дата создания")
 
     # Связи
+    # service: Mapped["ApiService"] = relationship(back_populates="request_logs")
     service: Mapped["ApiService"] = relationship(back_populates="request_logs")
     scheduled_task: Mapped[Optional["ScheduledTask"]] = relationship(back_populates="request_logs")
 
@@ -169,8 +172,8 @@ class ScheduledTask(Base):
 
     # Системные поля
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, comment="Дата создания")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False, onupdate=lambda: datetime.now(timezone.utc), comment="Дата обновления")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False, comment="Дата создания")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), nullable=False, onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None), comment="Дата обновления")
     created_by: Mapped[Optional[str]] = mapped_column(String(100), comment="Создатель")
     updated_by: Mapped[Optional[str]] = mapped_column(String(100), comment="Кто обновил")
 
