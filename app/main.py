@@ -2,7 +2,6 @@ from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from .api import tasks
 from app.api.admin import admin_router
 from app.api.user import user_router
 

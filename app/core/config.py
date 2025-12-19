@@ -8,7 +8,7 @@ class MarketType(str, Enum):
     CURRENCY = 'currency'
 
 
-class MarketTickerPrefix(str, Enum):
+class MarketTickerPrefix(str):
     CRYPTO = 'cr-'
     STOCK = 'st-'
     CURRENCY = 'cu-'
