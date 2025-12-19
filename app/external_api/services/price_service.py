@@ -66,7 +66,7 @@ class PriceService:
 
             db.commit()
 
-            logger.error(f'Обновлено цен: {updated_total}')
+            logger.error('Обновлено цен: %s', updated_total)
 
             return {
                 "status": "success",
@@ -76,7 +76,7 @@ class PriceService:
 
         except Exception as e:
             db.rollback()
-            logger.error(f'Ошибка в save_prices: {e}')
+            logger.error('Ошибка в save_prices: %s', e)
             return {'status': 'error', 'message': str(e)}
         finally:
             db.close()
