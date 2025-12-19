@@ -2,6 +2,7 @@ from typing import TypeVar, Generic, Type, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from pydantic import BaseModel
+# from sqlalchemy.orm import with_forupdate
 
 
 ModelType = TypeVar("ModelType")
@@ -27,7 +28,7 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return result.scalar_one_or_none()
 
     def get_by_name_with_forupdate(self, obj_name: str) -> Optional[ModelType]:
-        result = self.db.execute(select(self.model).where(self.model.name == obj_name).with_forupdate())
+        result = self.db.execute(select(self.model).where(self.model.name == obj_name).with_for_update())
         return result.scalar_one_or_none()
 
     def get_all(self, skip: int = 0, limit: Optional[int] = None) -> List[ModelType]:

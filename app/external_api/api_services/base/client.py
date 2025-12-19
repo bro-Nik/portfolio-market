@@ -6,7 +6,7 @@ import time
 import requests
 
 from app.models import ApiRequestLog
-from app.external_api.management.rate_limiter import RateLimiter
+from app.external_api.services.rate_limiter import RateLimiter
 from app.dependencies import get_sync_db
 
 

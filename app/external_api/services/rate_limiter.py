@@ -7,7 +7,8 @@ from datetime import datetime, timedelta, timezone
 import logging
 from contextlib import contextmanager
 
-from app.dependencies import get_sync_db, get_sync_redis
+from app.core.redis import get_celery_redis
+from app.dependencies import get_sync_db
 from app.external_api.services.api_service import ExternalApiService
 
 
@@ -22,7 +23,7 @@ class RateLimiter:
         service_name: str,
         sync_interval: int = 100
     ):
-        self.redis = get_sync_redis()
+        self.redis = get_celery_redis()
         self.service_name = service_name
         self.sync_interval = sync_interval
 
@@ -115,7 +116,7 @@ class RateLimiter:
 
     def _atomic_check_and_increment(self) -> Tuple[bool, Optional[float]]:
         """Атомарно проверить лимиты и увеличить счетчики"""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
 
         # Проверяем, нужно ли сбросить счетчики на основе времени
         self._check_and_reset_counters(now)
