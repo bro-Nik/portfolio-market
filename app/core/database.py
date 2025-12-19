@@ -1,13 +1,8 @@
 import os
-from typing import Generator, AsyncGenerator
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
-
-
-Base = declarative_base()
+from sqlalchemy.orm import sessionmaker
 
 
 # Конфигурация базы данных
@@ -46,20 +41,6 @@ AsyncSessionLocal = sessionmaker(
 )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Получение асинхронной сессии БД."""
-
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-
 # Создание синхронного движка
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
@@ -79,16 +60,3 @@ SyncSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
-
-def get_sync_db() -> Generator[Session, None, None]:
-    """Получение синхронной сессии БД."""
-    session = SyncSessionLocal()
-    try:
-        yield session
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()

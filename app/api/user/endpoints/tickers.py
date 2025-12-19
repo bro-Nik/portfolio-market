@@ -4,7 +4,7 @@ from sqlalchemy import select, or_, func
 from typing import List, Optional
 from pydantic import BaseModel
 
-from app import models, database
+from app import models, dependencies
 from app.api.dependencies.auth import get_current_user, User
 
 
@@ -53,7 +53,7 @@ async def search_tickers(
     market: Optional[str] = Query(None, description="Фильтр по рынку"),
     page: int = Query(1, ge=1, description="Номер страницы"),
     page_size: int = Query(20, ge=1, le=100, description="Размер страницы"),
-    db: AsyncSession = Depends(database.get_db)
+    db: AsyncSession = Depends(dependencies.get_db)
 ) -> TickerSearchResponse:
     """
     Поиск тикеров с пагинацией и фильтрацией
@@ -114,7 +114,7 @@ async def search_tickers(
 @router.post("/prices", response_model=AssetPricesResponse)
 async def get_assets_prices(
     asset_ids: List[str],
-    db: AsyncSession = Depends(database.get_db)
+    db: AsyncSession = Depends(dependencies.get_db)
 ) -> AssetPricesResponse:
     """
     Возвращает текущие цены для списка активов
@@ -132,7 +132,7 @@ async def get_assets_prices(
 @router.post('/images', response_model=AssetImagesResponse)
 async def get_assets_images(
     asset_ids: List[str],
-    db: AsyncSession = Depends(database.get_db)
+    db: AsyncSession = Depends(dependencies.get_db)
 ) -> AssetImagesResponse:
     """
     Возвращает URL изображений для списка активов
@@ -148,7 +148,7 @@ async def get_assets_images(
 @router.post('/info', response_model=AssetInfoResponse)
 async def get_assets_info(
     asset_ids: List[str],
-    db: AsyncSession = Depends(database.get_db)
+    db: AsyncSession = Depends(dependencies.get_db)
 ) -> AssetInfoResponse:
     """
     Возвращает информацию о тикерах для списка активов

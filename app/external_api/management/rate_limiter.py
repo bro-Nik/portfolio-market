@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 from contextlib import contextmanager
 
-from app.database import SyncSessionLocal
+from app.dependencies import get_sync_db
 from app.external_api.services.api_service import ExternalApiService
 from app.redis_client import get_redis_sync
 
@@ -53,38 +53,35 @@ class RateLimiter:
                 logger.warning('Невалидный конфиг в Redis для сервиса %s', self.service_name)
 
         # Загружаем из БД
-        db = SyncSessionLocal()
-        try:
+        with get_sync_db() as db:
             api_service = ExternalApiService(db)
             service = api_service.get_service(name=self.service_name)
 
-            if not service:
-                raise ValueError(f'Сервис "{self.service_name}" не найден')
+        if not service:
+            raise ValueError(f'Сервис "{self.service_name}" не найден')
 
-            config = {
-                'limits': {
-                    'minute': service.requests_per_minute or 0,
-                    'hour': service.requests_per_hour or 0,
-                    'day': service.requests_per_day or 0,
-                    'month': service.requests_per_month or 0,
-                },
-                'reset_times': {
-                    'minute': service.last_minute_reset.isoformat() if service.last_minute_reset else None,
-                    'hour': service.last_hour_reset.isoformat() if service.last_hour_reset else None,
-                    'day': service.last_day_reset.isoformat() if service.last_day_reset else None,
-                    'month': service.last_month_reset.isoformat() if service.last_month_reset else None,
-                }
+        config = {
+            'limits': {
+                'minute': service.requests_per_minute or 0,
+                'hour': service.requests_per_hour or 0,
+                'day': service.requests_per_day or 0,
+                'month': service.requests_per_month or 0,
+            },
+            'reset_times': {
+                'minute': service.last_minute_reset.isoformat() if service.last_minute_reset else None,
+                'hour': service.last_hour_reset.isoformat() if service.last_hour_reset else None,
+                'day': service.last_day_reset.isoformat() if service.last_day_reset else None,
+                'month': service.last_month_reset.isoformat() if service.last_month_reset else None,
             }
+        }
 
-            # Сохраняем в Redis
-            self.update_redis(config)
+        # Сохраняем в Redis
+        self.update_redis(config)
 
-            logger.info('Загружен конфиг из БД для сервиса %s', self.service_name)
-            logger.info(config)
+        logger.info('Загружен конфиг из БД для сервиса %s', self.service_name)
+        logger.info(config)
 
-            return config
-        finally:
-            db.close()
+        return config
 
     def update_redis(self, config = None):
         key = f'{self.redis_key_base}:config'
@@ -269,31 +266,27 @@ class RateLimiter:
 
     def _save_to_db(self, counts: Dict):
         """Сохранить счетчики в БД"""
-        db = SyncSessionLocal()
         try:
-            # Блокируем запись для этого сервиса
-            api_service = ExternalApiService(db)
-            service = api_service.get_service_whith_lock(name=self.service_name)
+            with get_sync_db() as db:
+                # Блокируем запись для этого сервиса
+                api_service = ExternalApiService(db)
+                service = api_service.get_service_whith_lock(name=self.service_name)
 
-            if not service:
-                logger.error('Сервис %s не найден в БД', self.service_name)
-                return
+                if not service:
+                    logger.error('Сервис %s не найден в БД', self.service_name)
+                    return
 
-            # Обновляем счетчики
-            service.minute_counter = counts.get('minute', 0)
-            service.hour_counter = counts.get('hour', 0)
-            service.day_counter = counts.get('day', 0)
-            service.month_counter = counts.get('month', 0)
-            service.total_requests = counts.get('total', 0)
+                # Обновляем счетчики
+                service.minute_counter = counts.get('minute', 0)
+                service.hour_counter = counts.get('hour', 0)
+                service.day_counter = counts.get('day', 0)
+                service.month_counter = counts.get('month', 0)
+                service.total_requests = counts.get('total', 0)
 
-            db.commit()
-            logger.debug('Синхронизированы счетчики в БД для сервиса %s', self.service_name)
+                logger.debug('Синхронизированы счетчики в БД для сервиса %s', self.service_name)
 
         except Exception as e:
             logger.error('Ошибка сохранения в БД для сервиса %s: %s', self.service_name, e)
-            db.rollback()
-        finally:
-            db.close()
 
     def get_usage(self) -> Dict:
         """Получить текущее использование"""
@@ -307,3 +300,7 @@ class RateLimiter:
                 'remaining': max(0, self._config['limits'][period] - (int(count) if count else 0))
             }
         return usage
+
+    def save_state(self):
+        """Для сохранения извне"""
+        self._sync_to_db_async()

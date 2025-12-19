@@ -5,7 +5,7 @@ import logging
 from sqlalchemy import case, update
 
 from app.models import Ticker
-from app.database import SyncSessionLocal
+from app.dependencies import get_sync_db
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,6 @@ class PriceService:
         """
 
         batch_size: int = 500
-        db = SyncSessionLocal()
 
         try:
             if not price_data:
@@ -35,36 +34,37 @@ class PriceService:
             updated_total = 0
             ticker_ids = list(price_data.keys())
 
-            # Обрабатываем батчами
-            for i in range(0, len(ticker_ids), batch_size):
-                batch_ids = ticker_ids[i:i + batch_size]
-                batch_data = {id: price_data[id] for id in batch_ids}
+            with get_sync_db() as db:
+                # Обрабатываем батчами
+                for i in range(0, len(ticker_ids), batch_size):
+                    batch_ids = ticker_ids[i:i + batch_size]
+                    batch_data = {id: price_data[id] for id in batch_ids}
 
-                # Создаем CASE выражение для батча
-                when_conditions = []
-                for ticker_id, price in batch_data.items():
-                    when_conditions.append((Ticker.id == ticker_id, price))
+                    # Создаем CASE выражение для батча
+                    when_conditions = []
+                    for ticker_id, price in batch_data.items():
+                        when_conditions.append((Ticker.id == ticker_id, price))
 
-                case_expr = case(
-                    *when_conditions,
-                    else_=Ticker.price
-                )
-
-                # UPDATE запрос
-                stmt = (
-                    update(Ticker)
-                    .where(Ticker.id.in_(batch_ids))
-                    .values(
-                        price=case_expr,
-                        updated_at=current_time
+                    case_expr = case(
+                        *when_conditions,
+                        else_=Ticker.price
                     )
-                    .execution_options(synchronize_session=False)
-                )
 
-                result = db.execute(stmt)
-                updated_total += result.rowcount
+                    # UPDATE запрос
+                    stmt = (
+                        update(Ticker)
+                        .where(Ticker.id.in_(batch_ids))
+                        .values(
+                            price=case_expr,
+                            updated_at=current_time
+                        )
+                        .execution_options(synchronize_session=False)
+                    )
 
-            db.commit()
+                    result = db.execute(stmt)
+                    updated_total += result.rowcount
+
+                db.commit()
 
             logger.error('Обновлено цен: %s', updated_total)
 
@@ -75,8 +75,5 @@ class PriceService:
             }
 
         except Exception as e:
-            db.rollback()
             logger.error('Ошибка в save_prices: %s', e)
             return {'status': 'error', 'message': str(e)}
-        finally:
-            db.close()

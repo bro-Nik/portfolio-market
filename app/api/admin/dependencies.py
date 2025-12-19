@@ -2,7 +2,7 @@ from app.services.api_task_service import ApiTaskService
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.dependencies import get_db
 from app.services.api_service import ApiService
 
 

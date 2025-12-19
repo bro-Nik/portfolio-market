@@ -4,7 +4,7 @@ from contextlib import contextmanager, asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.database import AsyncSessionLocal, SyncSessionLocal
+from app.core.database import AsyncSessionLocal, SyncSessionLocal
 
 
 @asynccontextmanager
