@@ -7,12 +7,9 @@ from datetime import datetime, timedelta, timezone
 import logging
 from contextlib import contextmanager
 
-from app.dependencies import get_sync_db
+from app.dependencies import get_sync_db, get_sync_redis
 from app.external_api.services.api_service import ExternalApiService
-from app.redis_client import get_redis_sync
 
-
-redis = get_redis_sync()
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +22,7 @@ class RateLimiter:
         service_name: str,
         sync_interval: int = 100
     ):
-        self.redis = redis
+        self.redis = get_sync_redis()
         self.service_name = service_name
         self.sync_interval = sync_interval
 
