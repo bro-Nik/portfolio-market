@@ -2,10 +2,8 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 import logging
 
-from sqlalchemy import case, update
-
-from app.models import Ticker
 from app.dependencies import get_sync_db
+from app.repositories.sync_repo.ticker import TickerRepository
 
 
 logger = logging.getLogger(__name__)
@@ -23,10 +21,12 @@ class PriceService:
             Результат операции
         """
 
+        logger.info('Старт сервиса обновления цен. Пришло %s цен', len(price_data))
         batch_size: int = 500
 
         try:
             if not price_data:
+                logger.warning('Нет ценовых данных')
                 return {'status': 'warning', 'message': 'Нет ценовых данных'}
 
             current_time = datetime.now(timezone.utc)
@@ -35,38 +35,17 @@ class PriceService:
             ticker_ids = list(price_data.keys())
 
             with get_sync_db() as db:
+                ticker_repo = TickerRepository(db)
+
                 # Обрабатываем батчами
                 for i in range(0, len(ticker_ids), batch_size):
                     batch_ids = ticker_ids[i:i + batch_size]
                     batch_data = {id: price_data[id] for id in batch_ids}
 
-                    # Создаем CASE выражение для батча
-                    when_conditions = []
-                    for ticker_id, price in batch_data.items():
-                        when_conditions.append((Ticker.id == ticker_id, price))
-
-                    case_expr = case(
-                        *when_conditions,
-                        else_=Ticker.price
-                    )
-
-                    # UPDATE запрос
-                    stmt = (
-                        update(Ticker)
-                        .where(Ticker.id.in_(batch_ids))
-                        .values(
-                            price=case_expr,
-                            updated_at=current_time
-                        )
-                        .execution_options(synchronize_session=False)
-                    )
-
-                    result = db.execute(stmt)
+                    result = ticker_repo.batch_update_ticker_prices(batch_ids, batch_data, current_time)
                     updated_total += result.rowcount
 
-                db.commit()
-
-            logger.error('Обновлено цен: %s', updated_total)
+            logger.info('Завершение сервиса обновления цен. Обновлено цен: %s', updated_total)
 
             return {
                 "status": "success",
