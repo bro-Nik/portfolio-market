@@ -37,23 +37,6 @@ class ApiServiceRepository(BaseRepository[models.ApiService, schemas.ApiServiceC
         )
         return result.scalar_one_or_none()
 
-    async def update(self, service_id: int, obj_in: schemas.ApiServiceUpdate) -> Optional[models.ApiService]:
-        service = await self.get(service_id)
-        if not service:
-            return None
-
-        # Подготавливаем данные для обновления
-        update_data = obj_in.dict(exclude_unset=True)
-        update_data['updated_at'] = datetime.utcnow()
-
-        # Обновляем поля
-        for key, value in update_data.items():
-            setattr(service, key, value)
-
-        await self.db.commit()
-        await self.db.refresh(service)
-        return service
-
     async def get_logs_to_stats(self, service_id: int, last_time: datetime):
         """Получить статистику по сервису"""
         query = select(

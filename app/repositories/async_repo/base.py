@@ -14,9 +14,9 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.model = model
         self.db = db
 
-    async def get(self, id: int) -> Optional[ModelType]:
+    async def get(self, obj_id: int) -> Optional[ModelType]:
         result = await self.db.execute(
-            select(self.model).where(self.model.id == id)
+            select(self.model).where(self.model.id == obj_id)
         )
         return result.scalar_one_or_none()
 
@@ -33,11 +33,28 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.db.add(db_obj)
         return db_obj
 
-    async def delete(self, id: int):
+    async def delete(self, obj_id: int):
         result = await self.db.execute(
-            select(self.model).where(self.model.id == id)
+            select(self.model).where(self.model.id == obj_id)
         )
         db_obj = result.scalar_one_or_none()
 
         if db_obj:
             await self.db.delete(db_obj)
+
+    async def update(self, obj_id: int, obj_in: CreateSchemaType) -> Optional[ModelType]:
+        db_obj = await self.get(obj_id)
+        if not db_obj:
+            return None
+
+        # Подготавливаем данные для обновления
+        update_data = obj_in.dict(exclude_unset=True)
+        # update_data['updated_at'] = datetime.utcnow()
+
+        # Обновляем поля
+        for key, value in update_data.items():
+            setattr(db_obj, key, value)
+
+        # await self.db.commit()
+        # await self.db.refresh(db_obj)
+        return db_obj
